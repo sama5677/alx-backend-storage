@@ -1,48 +1,28 @@
 #!/usr/bin/env python3
-"""Script that returns Nginx logs stats stored in MongoDB"""
-import pymongo
-
-"""
-client = pymongo.MongoClient('mongodb://127.0.0.1:27017')
-database = client['logs']
-collection = database['nginx']
-
-logs = collection.count_documents({})
-print(f"{logs} logs")
-
-all_methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
-methods = {method: collection.count_documents(
-    {"method": method}) for method in all_methods}
-print("Methods:")
-for method, count in methods.items():
-    print(f"    method {method}: {count}")
-
-status = collection.count_documents({"method": "GET", "path": "/status"})
-print(f"{status} status check")
-
-client.close()
-"""
+"""Log stats"""
+from pymongo import MongoClient
 
 
-def collection(db: dict) -> int:
-    """Function to retroeve logs information"""
-    client = pymongo.MongoClient('mongodb://127.0.0.1:27017')
-    logs = client.logs.nginx
-    return logs.count_documents(db)
+def count_docs(collection) -> int:
+    """Return the number of documents in a collection"""
+    return collection.count_documents({})
 
 
-def main():
-    """Function that returns stats about Nginx logs stored in MongoDB"""
-
-    print(f"{collection({})} logs")
-    print("Methods:")
-    print(f"\tmethod GET: {collection({'method': 'GET'})}")
-    print(f"\tmethod POST: {collection({'method': 'POST'})}")
-    print(f"\tmethod PUT: {collection({'method': 'PUT'})}")
-    print(f"\tmethod PATCH: {collection({'method': 'PATCH'})}")
-    print(f"\tmethod DELETE: {collection({'method': 'DELETE'})}")
-    print(f"{collection({'method': 'GET', 'path': '/status'})} status check")
+def find_count(collection, key: str, value: str) -> int:
+    """Return the number of documents that match the search"""
+    return collection.count_documents({key: value})
 
 
 if __name__ == "__main__":
-    main()
+    client = MongoClient("mongodb://127.0.0.1:27017")
+    collection = client.logs.nginx
+    print("{} logs".format(count_docs(collection)))
+    methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    print("Methods:")
+    for method in methods:
+        print(
+            "\tmethod {}: {}".format(
+                method, find_count(collection, "method", method)
+            )
+        )
+    print("{} status check".format(find_count(collection, "path", "/status")))
